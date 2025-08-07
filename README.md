@@ -1,7 +1,7 @@
 # fat-aar-android
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/aasitnikov/fat-aar-android/blob/master/LICENSE)
-[![JitPack](https://jitpack.io/v/aasitnikov/fat-aar-android.svg)](https://jitpack.io/#bilgehankalkan/fat-aar-android)
+[![JitPack](https://jitpack.io/v/bilgehankalkan/fat-aar-android.svg)](https://jitpack.io/#bilgehankalkan/fat-aar-android)
 
 This fork fixes same project/module issue. Checks for project's group name while processing dependencies.
 
