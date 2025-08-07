@@ -22,7 +22,7 @@ repositories {
 gradlePlugin {
     plugins {
         create("fatAarAndroidPlugin") {
-            id = "com.github.bilgehankalkan.fataar"
+            id = "com.github.bilgehankalkan.fat-aar-android"
             displayName = "Fat Aar Plugin to merge all dependencies into single aar"
             implementationClass = "com.kezong.fataar.FatAarPlugin"
             description = "This plugin is a fork of: https://github.com/aasitnikov/fat-aar-android"
