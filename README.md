@@ -1,11 +1,11 @@
 # fat-aar-android
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/aasitnikov/fat-aar-android/blob/master/LICENSE)
-[![JitPack](https://jitpack.io/v/aasitnikov/fat-aar-android.svg)](https://jitpack.io/#aasitnikov/fat-aar-android)
+[![JitPack](https://jitpack.io/v/aasitnikov/fat-aar-android.svg)](https://jitpack.io/#bilgehankalkan/fat-aar-android)
 
-This fork adds support for AGP 8.0+
+This fork fixes same project/module issue. Checks for project's group name while processing dependencies.
 
-The solution of merging aar works with [AGP][3] 8.5 and Gradle 8.7
+The solution of merging aar works with [AGP][3] `8.12.0` and Gradle `9.0.0`.
 
 ## Getting Started
 
@@ -17,13 +17,21 @@ buildscript {
         maven {
             setUrl("https://jitpack.io")
             content {
-                includeGroup("com.github.aasitnikov")
+                includeGroup("com.github.bilgehankalkan")
             }
         }
     }
     dependencies {
-        classpath 'com.github.aasitnikov:fat-aar-android:1.4.2'
+        classpath 'com.github.bilgehankalkan:fat-aar-android:1.5.0'
     }
+}
+```
+
+Or:
+
+```kotlin
+plugins {
+    id("com.github.bilgehankalkan.fat-aar-android").version("1.5.0).apply(false)
 }
 ```
 
@@ -31,6 +39,14 @@ buildscript {
 Add snippet below to the `build.gradle` of your main android library:
 ```groovy
 apply plugin: 'com.kezong.fat-aar'
+```
+
+Or:
+
+```kotlin
+plugins {
+    id("com.github.bilgehankalkan.fat-aar-android")
+}
 ```
 
 ### Step 3: Embed dependencies
@@ -118,6 +134,7 @@ See [anatomy of an aar file here][2].
 ## Gradle Version Support
 |     Version     | Android Gradle Plugin |  Gradle   |
 |:---------------:|:---------------------:|:---------:|
+|      1.5.0      |         8.12.0        |   9.0.0   |
 |      1.4.2      |          8.7          |   8.12    |
 |      1.4.1      |          8.5          |    8.7    |
 |      1.4.0      |          8.3          |    8.6    |
@@ -141,6 +158,9 @@ The following link which version of Gradle is required for each version of the A
 [Plugin version and Required Gradle version](https://developer.android.com/build/releases/gradle-plugin)
 
 ## Version Log
+- [1.5.0](<https://github.com/bilgehankalkan/fat-aar-android/releases/tag/1.5.0>)
+  - Check group name while processing dependencies. It's required because same names might be used on different projects/modules(like: `:features:home:impl` and `:features:profile:impl`).
+  - Build with Gradle 9.0.0 and AGP 8.12.0.
 - [1.4.2](<https://github.com/aasitnikov/fat-aar-android/releases/tag/1.4.2>)
   - Drop AGP < 8.0.0 support
   - Fix parallel multi-project tasks execution
