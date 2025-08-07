@@ -9,39 +9,18 @@ The solution of merging aar works with [AGP][3] `8.12.0` and Gradle `9.0.0`.
 
 ## Getting Started
 
-### Step 1: Add classpath
-#### Add snippet below to your root build script file:
-```groovy
-buildscript {
-    repositories {
-        maven {
-            setUrl("https://jitpack.io")
-            content {
-                includeGroup("com.github.bilgehankalkan")
-            }
-        }
-    }
-    dependencies {
-        classpath 'com.github.bilgehankalkan:fat-aar-android:1.5.0'
-    }
-}
-```
-
-Or:
+### Step 1: Declare plugin
+Add snippet below to the root `build.gradle.kts` of your project:
 
 ```kotlin
 plugins {
-    id("com.github.bilgehankalkan.fat-aar-android").version("1.5.0).apply(false)
+    id("com.github.bilgehankalkan.fat-aar-android").version("<latest-version>").apply(false)
 }
 ```
 
 ### Step 2: Add plugin
-Add snippet below to the `build.gradle` of your main android library:
-```groovy
-apply plugin: 'com.kezong.fat-aar'
-```
 
-Or:
+Apply the plugin to desired project/module's `build.gradle.kts`:
 
 ```kotlin
 plugins {
@@ -49,7 +28,7 @@ plugins {
 }
 ```
 
-### Step 3: Embed dependencies
+### Step 2: Embed dependencies
 
 Declare `embed` for the dependencies you want to merge in `build.gradle`. 
 
