@@ -157,7 +157,8 @@ class FatAarPlugin implements Plugin<Project> {
         def artifactList = new ArrayList()
         configuration.resolvedConfiguration.firstLevelModuleDependencies.each { dependency ->
             def match = artifacts.any { artifact ->
-                dependency.moduleName == artifact.moduleVersion.id.name
+                dependency.moduleName == artifact.moduleVersion.id.name &&
+                        dependency.moduleGroup == artifact.moduleVersion.id.group
             }
 
             if (!match) {

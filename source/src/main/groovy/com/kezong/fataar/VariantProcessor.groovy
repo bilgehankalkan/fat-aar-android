@@ -7,7 +7,6 @@ import org.gradle.api.Task
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.file.DuplicatesStrategy
-import org.gradle.api.internal.artifacts.ResolvableDependency
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.tasks.Copy
@@ -61,7 +60,7 @@ final class VariantProcessor {
     }
 
     void processVariant(Collection<ResolvedArtifact> artifacts,
-                        Collection<ResolvableDependency> dependencies) {
+                        Collection<ResolvedDependency> dependencies) {
         String taskPath = 'pre' + mVariant.name.capitalize() + 'Build'
         TaskProvider prepareTask = mProject.tasks.named(taskPath)
         if (prepareTask == null) {
