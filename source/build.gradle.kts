@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.github.bilgehankalkan"
-version = "1.5.0"
+version = "1.6.0"
 
 buildscript {
     repositories {
@@ -34,7 +34,7 @@ dependencies {
     implementation(gradleApi())
     implementation(localGroovy())
     implementation("org.javassist:javassist:3.27.0-GA")
-    implementation("com.android.tools.build:gradle:8.12.0")
+    implementation("com.android.tools.build:gradle:9.3.2")
     implementation("com.android.tools:common:31.12.0")
     implementation("org.ow2.asm:asm-commons:9.7.1")
 }

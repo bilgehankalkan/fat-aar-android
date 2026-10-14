@@ -1,8 +1,7 @@
-package com.kezong.fataar;
+package com.kezong.fataar
 
-import com.android.build.gradle.api.LibraryVariant;
-
-import org.gradle.api.Project;
+import com.android.build.api.variant.LibraryVariant
+import org.gradle.api.Project
 
 final class DirectoryManager {
 

@@ -1,6 +1,6 @@
 package com.kezong.fataar
 
-import com.android.build.gradle.api.LibraryVariant
+import com.android.build.api.variant.LibraryVariant
 import com.android.build.gradle.tasks.ManifestProcessorTask
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -55,7 +55,7 @@ final class VariantProcessor {
         mAndroidArchiveLibrariesProperty.add(library)
     }
 
-    void addJarFile(File jar) {
+    void addJarFile(File jar, String embeddedName = jar.name) {
         mJarFiles.add(jar)
     }
 
@@ -69,6 +69,9 @@ final class VariantProcessor {
         TaskProvider bundleTask = VersionAdapter.getBundleTaskProvider(mProject, mVariant.name)
         preEmbed(artifacts, dependencies, prepareTask)
         processArtifacts(artifacts, prepareTask, bundleTask)
+        mProject.tasks.named("process${mVariant.name.capitalize()}NavigationResources").configure {
+            dependsOn(mExplodeTasks)
+        }
         processClassesAndJars(bundleTask)
         if (mAndroidArchiveLibraries.isEmpty()) {
             return
@@ -91,8 +94,9 @@ final class VariantProcessor {
                 return
             }
 
-            ResolvedArtifact self = dependency.allModuleArtifacts.find { module ->
-                module.moduleVersion.id.name == dependency.moduleName
+            ResolvedArtifact self = artifacts.find { module ->
+                module.moduleVersion.id.group == dependency.moduleGroup &&
+                        module.moduleVersion.id.name == dependency.moduleName
             }
 
             if (self == null) {
@@ -103,12 +107,16 @@ final class VariantProcessor {
             moduleNames.remove(self.moduleVersion.id.name)
 
             dependency.allModuleArtifacts.each { artifact ->
-                if (!moduleNames.contains(artifact.moduleVersion.id.name)) {
+                ResolvedArtifact embeddedArtifact = artifacts.find { module ->
+                    module.moduleVersion.id.group == artifact.moduleVersion.id.group &&
+                            module.moduleVersion.id.name == artifact.moduleVersion.id.name
+                }
+                if (embeddedArtifact == null || !moduleNames.contains(embeddedArtifact.moduleVersion.id.name)) {
                     return
                 }
-                if (artifact != self) {
-                    FatUtils.logAnytime("    - [embed detected][transitive][$artifact.type]${artifact.moduleVersion.id}")
-                    moduleNames.remove(artifact.moduleVersion.id.name)
+                if (embeddedArtifact != self) {
+                    FatUtils.logAnytime("    - [embed detected][transitive][$embeddedArtifact.type]${embeddedArtifact.moduleVersion.id}")
+                    moduleNames.remove(embeddedArtifact.moduleVersion.id.name)
                 }
             }
         }
@@ -124,10 +132,8 @@ final class VariantProcessor {
     private void preEmbed(Collection<ResolvedArtifact> artifacts,
                           Collection<ResolvedDependency> dependencies,
                           TaskProvider prepareTask) {
+        printEmbedArtifacts(artifacts, dependencies)
         TaskProvider embedTask = mProject.tasks.register("pre${mVariant.name.capitalize()}Embed") {
-            doFirst {
-                printEmbedArtifacts(artifacts, dependencies)
-            }
         }
 
         prepareTask.configure {
@@ -196,7 +202,12 @@ final class VariantProcessor {
         }
         for (final ResolvedArtifact artifact in artifacts) {
             if (FatAarPlugin.ARTIFACT_TYPE_JAR == artifact.type) {
-                addJarFile(artifact.file)
+                String embeddedName = (
+                        "${artifact.moduleVersion.id.group}-" +
+                                "${artifact.moduleVersion.id.name}-${artifact.file.name}"
+                )
+                        .replaceAll('[^A-Za-z0-9_.-]', '-')
+                addJarFile(artifact.file, embeddedName)
             } else if (FatAarPlugin.ARTIFACT_TYPE_AAR == artifact.type) {
                 AndroidArchiveLibrary archiveLibrary = new AndroidArchiveLibrary(mProject, artifact, mVariant.name)
                 addAndroidArchiveLibrary(archiveLibrary)
@@ -299,10 +310,10 @@ final class VariantProcessor {
 
             outputs.dir(mergeClassDir)
 
-            doFirst {
+            doFirst { task ->
                 // Extract relative paths and delete previous output.
                 def pathsToDelete = new ArrayList<Path>()
-                mProject.fileTree(mergeClassDir).forEach {
+                task.project.fileTree(mergeClassDir).forEach {
                     pathsToDelete.add(Paths.get(mergeClassDir.absolutePath).relativize(Paths.get(it.absolutePath)))
                 }
                 mergeClassDir.deleteDir()
@@ -312,13 +323,14 @@ final class VariantProcessor {
                 }
             }
 
-            doLast {
-                ExplodedHelper.processClassesJarInfoClasses(mProject, mAndroidArchiveLibraries, mergeClassDir)
+            doLast { task ->
+                ExplodedHelper.processClassesJarInfoClasses(task.project, mAndroidArchiveLibraries, mergeClassDir)
                 if (isMinifyEnabled) {
-                    ExplodedHelper.processLibsIntoClasses(mProject, mAndroidArchiveLibraries, mJarFiles, mergeClassDir)
+                    ExplodedHelper.processLibsIntoClasses(task.project, mAndroidArchiveLibraries, mJarFiles, mergeClassDir)
                 }
 
-                mProject.copy {
+                mergeClassDir.mkdirs()
+                task.project.copy {
                     from mergeClassDir
                     into javacDir
                     exclude 'META-INF/'
@@ -352,7 +364,12 @@ final class VariantProcessor {
             }
 
             doLast {
-                ExplodedHelper.processLibsIntoLibs(mProject, mAndroidArchiveLibraries, mJarFiles, libsDir)
+            ExplodedHelper.processLibsIntoLibs(
+                    mProject,
+                    mAndroidArchiveLibraries,
+                    mJarFiles,
+                    libsDir
+            )
 
                 // Create a temporary directory
                 tempDir.mkdirs()
@@ -387,7 +404,9 @@ final class VariantProcessor {
      * merge classes and jars
      */
     private void processClassesAndJars(TaskProvider<Task> bundleTask) {
-        boolean isMinifyEnabled = mVariant.getBuildType().isMinifyEnabled()
+        boolean isMinifyEnabled = mProject.android.buildTypes
+                .getByName(mVariant.getBuildType())
+                .isMinifyEnabled()
 
         final TaskProvider syncLibTask = mProject.tasks.named(mVersionAdapter.getSyncLibJarsTaskPath())
         final TaskProvider extractAnnotationsTask = mProject.tasks.named("extract${mVariant.name.capitalize()}Annotations")
@@ -437,8 +456,8 @@ final class VariantProcessor {
 
         for (archiveLibrary in mAndroidArchiveLibraries) {
             FatUtils.logInfo("Merge resource，Library res：${archiveLibrary.resFolder}")
-            mVariant.registerGeneratedResFolders(
-                    mProject.files(archiveLibrary.resFolder)
+            mVariant.sources.res.addStaticSourceDirectory(
+                    archiveLibrary.resFolder.absolutePath
             )
         }
     }

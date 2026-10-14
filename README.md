@@ -5,7 +5,13 @@
 
 This fork fixes same project/module issue. Checks for project's group name while processing dependencies.
 
+- Version 1.5.0:
+
 The solution of merging aar works with [AGP][3] `8.12.0` and Gradle `9.0.0`.
+
+- Version 1.6.0:
+
+The solution of merging aar works with [AGP][3] `9.3.2` and Gradle `9.5.1`.
 
 ## Getting Started
 

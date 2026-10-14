@@ -1,5 +1,7 @@
 package com.kezong.fataar;
 
+import static com.android.build.api.instrumentation.FramesComputationMode.COPY_FRAMES;
+
 import com.android.build.api.instrumentation.AsmClassVisitorFactory;
 import com.android.build.api.instrumentation.ClassContext;
 import com.android.build.api.instrumentation.ClassData;
@@ -26,8 +28,6 @@ import java.util.stream.Collectors;
 
 import kotlin.Unit;
 import kotlin.text.StringsKt;
-
-import static com.android.build.api.instrumentation.FramesComputationMode.COPY_FRAMES;
 
 public class FatAarPluginHelper {
 

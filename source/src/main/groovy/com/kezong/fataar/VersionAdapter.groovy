@@ -1,6 +1,6 @@
 package com.kezong.fataar
 
-import com.android.build.gradle.api.LibraryVariant
+import com.android.build.api.variant.LibraryVariant
 import com.android.build.gradle.tasks.ManifestProcessorTask
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -39,15 +39,21 @@ final class VersionAdapter {
     }
 
     Task getJavaCompileTask() {
-        return mVariant.getJavaCompileProvider().get()
+        return mProject.tasks
+                .named("compile${mVariant.name.capitalize()}JavaWithJavac")
+                .get()
     }
 
     ManifestProcessorTask getProcessManifest() {
-        return mVariant.getOutputs().first().getProcessManifestProvider().get()
+        return mProject.tasks
+                .named("process${mVariant.name.capitalize()}Manifest")
+                .get() as ManifestProcessorTask
     }
 
     Task getMergeAssets() {
-        return mVariant.getMergeAssetsProvider().get()
+        return mProject.tasks
+                .named("merge${mVariant.name.capitalize()}Assets")
+                .get()
     }
 
     String getSyncLibJarsTaskPath() {

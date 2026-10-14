@@ -3,6 +3,7 @@ package com.kezong.fataar
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.DependencyResolutionListener
+import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvableDependencies
 import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 
@@ -37,11 +38,8 @@ class EmbedResolutionListener implements DependencyResolutionListener {
     void beforeResolve(ResolvableDependencies resolvableDependencies) {
         configuration.dependencies.each { dependency ->
             if (dependency instanceof DefaultProjectDependency) {
-                if (dependency.targetConfiguration == null) {
-                    dependency.targetConfiguration = "default"
-                }
+                ProjectDependency dependencyClone = dependency.copy()
                 // support that the module can be indexed in Android Studio 4.0.0
-                DefaultProjectDependency dependencyClone = dependency.copy()
                 dependencyClone.targetConfiguration = null;
                 // The purpose is to support the code hints
                 project.dependencies.add(compileOnlyConfigName, dependencyClone)

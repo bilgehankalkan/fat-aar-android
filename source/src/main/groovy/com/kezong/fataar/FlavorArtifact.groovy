@@ -1,7 +1,6 @@
 package com.kezong.fataar
 
-import com.android.build.gradle.api.LibraryVariant
-import com.android.builder.model.ProductFlavor
+import com.android.build.api.variant.LibraryVariant
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -42,7 +41,6 @@ class FlavorArtifact {
         }
 
         if (bundleProvider == null) {
-            FatUtils.logError("[$variant.name]Can not resolve :$unResolvedArtifact.moduleName")
             return null
         }
 
@@ -93,54 +91,14 @@ class FlavorArtifact {
     }
 
     private static TaskProvider getBundleTask(Project project, LibraryVariant variant) {
-        TaskProvider bundleTaskProvider = null
-        project.android.libraryVariants.find { subVariant ->
-            // 1. find same flavor
-            if (variant.name == subVariant.name) {
-                try {
-                    bundleTaskProvider = VersionAdapter.getBundleTaskProvider(project, subVariant.name as String)
-                    return true
-                } catch (Exception ignore) {
-                }
-            }
-
-            // 2. find buildType
-            ProductFlavor flavor = variant.productFlavors.isEmpty() ? variant.mergedFlavor : variant.productFlavors.first()
-            if (subVariant.name == variant.buildType.name) {
-                try {
-                    bundleTaskProvider = VersionAdapter.getBundleTaskProvider(project, subVariant.name as String)
-                    return true
-                } catch (Exception ignore) {
-                }
-            }
-
-            // 3. find missingStrategies
+        for (String variantName : [variant.name, variant.getBuildType()]) {
             try {
-                flavor.missingDimensionStrategies.find { entry ->
-                    String toDimension = entry.getKey()
-                    List<String> toFlavors = [entry.getValue().requested] + entry.getValue().getFallbacks()
-                    ProductFlavor subFlavor = subVariant.productFlavors.isEmpty() ?
-                            subVariant.mergedFlavor : subVariant.productFlavors.first()
-                    toFlavors.find { toFlavor ->
-                        if (toDimension == subFlavor.dimension
-                                && toFlavor == subFlavor.name
-                                && variant.buildType.name == subVariant.buildType.name) {
-                            try {
-                                bundleTaskProvider = VersionAdapter.getBundleTaskProvider(project, subVariant.name as String)
-                                return true
-                            } catch (Exception ignore) {
-                            }
-                        }
-                    }
-                }
+                return VersionAdapter.getBundleTaskProvider(project, variantName)
             } catch (Exception ignore) {
-
+                // Try the next compatible variant name.
             }
-
-            return bundleTaskProvider != null
         }
-
-        return bundleTaskProvider
+        return null
     }
 
 }

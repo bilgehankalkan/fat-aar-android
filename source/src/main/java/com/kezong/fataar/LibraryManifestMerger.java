@@ -3,6 +3,7 @@ package com.kezong.fataar;
 import com.android.build.gradle.internal.LoggerWrapper;
 import com.android.manifmerger.ManifestMerger2;
 import com.android.manifmerger.ManifestProvider;
+import com.android.manifmerger.ManifestSystemProperty;
 import com.android.manifmerger.MergingReport;
 import com.android.utils.ILogger;
 
@@ -16,13 +17,21 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * ManifestMerger for Library
  */
 public class LibraryManifestMerger extends DefaultTask {
+
+    @Override
+    public boolean isCompatibleWithConfigurationCache() {
+        return false;
+    }
 
     private String mGradlePluginVersion;
 
@@ -56,7 +65,14 @@ public class LibraryManifestMerger extends DefaultTask {
     protected void doFullTaskAction() throws ManifestMerger2.MergeFailureException, IOException {
         ILogger iLogger = new LoggerWrapper(getLogger());
         ManifestMerger2.Invoker mergerInvoker = ManifestMerger2.
-                newMerger(getMainManifestFile(), iLogger, ManifestMerger2.MergeType.LIBRARY);
+                newMerger(createMainManifestWithoutUsesSdk(), iLogger, ManifestMerger2.MergeType.LIBRARY);
+        String minSdkVersion = getMainManifestMinSdkVersion();
+        if (minSdkVersion != null) {
+            mergerInvoker.setOverride(
+                    ManifestSystemProperty.UsesSdk.MIN_SDK_VERSION,
+                    minSdkVersion
+            );
+        }
         List<File> secondaryManifestFiles = getSecondaryManifestFiles();
         List<ManifestProvider> manifestProviders = new ArrayList<>();
         if (secondaryManifestFiles != null) {
@@ -89,10 +105,32 @@ public class LibraryManifestMerger extends DefaultTask {
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(getOutputFile()), StandardCharsets.UTF_8)
         );
-        writer.append(mergingReport
-                .getMergedDocument(MergingReport.MergedManifestKind.MERGED));
+        writer.append(removeUsesSdk(mergingReport
+                .getMergedDocument(MergingReport.MergedManifestKind.MERGED)));
         writer.flush();
         writer.close();
+    }
+
+    private File createMainManifestWithoutUsesSdk() throws IOException {
+        String manifest = Files.readString(getMainManifestFile().toPath(), StandardCharsets.UTF_8);
+        String sanitizedManifest = removeUsesSdk(manifest);
+        File sanitizedFile = new File(getTemporaryDir(), "main-manifest-without-uses-sdk.xml");
+        Files.writeString(sanitizedFile.toPath(), sanitizedManifest, StandardCharsets.UTF_8);
+        return sanitizedFile;
+    }
+
+    private String getMainManifestMinSdkVersion() throws IOException {
+        Matcher matcher = Pattern.compile(
+                "<uses-sdk\\b[^>]*android:minSdkVersion=\\\"([^\\\"]+)\\\""
+        ).matcher(Files.readString(getMainManifestFile().toPath(), StandardCharsets.UTF_8));
+        return matcher.find() ? matcher.group(1) : null;
+    }
+
+    private String removeUsesSdk(String manifest) {
+        return manifest.replaceAll(
+                "(?s)\\s*<uses-sdk\\b[^>]*(?:/>|>.*?</uses-sdk>)",
+                ""
+        );
     }
 
     public File getMainManifestFile() {
